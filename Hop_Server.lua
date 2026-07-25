@@ -133,10 +133,20 @@ for _, apiInfo in ipairs(API_LIST) do
                 end
 
                 local serverList = ParseServers(rawData)
-                if #serverList == 0 then
+                local currentPlaceId = game.PlaceId
+                local matchingServers = {}
+
+                -- Lọc ra những server trùng với thế giới hiện tại
+                for _, s in ipairs(serverList) do
+                    if s.place_id == currentPlaceId then
+                        table.insert(matchingServers, s)
+                    end
+                end
+
+                if #matchingServers == 0 then
                     Library:Notify({
                         Title    = apiInfo.Name,
-                        Content  = "No servers available in API!",
+                        Content  = "No matching servers found for your current World!",
                         Duration = 4
                     })
                     return
@@ -144,32 +154,19 @@ for _, apiInfo in ipairs(API_LIST) do
 
                 Library:Notify({
                     Title    = apiInfo.Name,
-                    Content  = "Created " .. tostring(#serverList) .. " server buttons!",
+                    Content  = "Found " .. tostring(#matchingServers) .. " matching servers!",
                     Duration = 3
                 })
 
-                local currentPlaceId = game.PlaceId
-
-                for idx, s in ipairs(serverList) do
-                    local isMatch = (s.place_id == currentPlaceId)
-                    local colorHex = isMatch and "#00FF00" or "#FF0000"
-                    
+                -- Chỉ tạo nút cho các server hợp lệ
+                for _, s in ipairs(matchingServers) do
                     local btnTitle = string.format("[%s] %s | Players: %s", s.name_server, s.world, s.player_count)
-                    local btnDesc  = string.format("PlaceId: <font color=\"%s\">%s</font> | JobId: %s", colorHex, tostring(s.place_id), s.Job_id:sub(1, 8))
+                    local btnDesc  = string.format("PlaceId: %s | JobId: %s", tostring(s.place_id), s.Job_id:sub(1, 8))
 
                     local serverBtn = Tab:AddButton({
                         Title       = btnTitle,
                         Description = btnDesc,
                         Callback    = function()
-                            if not isMatch then
-                                Library:Notify({
-                                    Title    = "Hop Failed",
-                                    Content  = "World ID mismatch! You cannot hop to a server in a different world.",
-                                    Duration = 4
-                                })
-                                return
-                            end
-
                             Library:Notify({
                                 Title    = "Teleporting",
                                 Content  = "Joining JobId: " .. s.Job_id:sub(1, 12) .. "...",
